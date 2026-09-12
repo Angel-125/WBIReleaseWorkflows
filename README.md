@@ -25,6 +25,8 @@ The caller must grant `contents: write` so the reusable workflow can create the 
 
 The examples reference the stable major tag `@v1`. Before using them, publish the initial central workflow version and create the `v1` tag in this repository. During initial testing only, you can temporarily change `@v1` to `@main`; a version tag is safer because changes to `main` cannot unexpectedly alter established release callers.
 
+See the [repository inventory](docs/repository-inventory.md) for the caller values, packaged dependencies, and migration notes for Buffalo 2, Sandcastle, SunkWorks, WildBlueCore, and Blueshift.
+
 After installing a caller, create and push either form of a version tag:
 
 ```text

@@ -1,0 +1,48 @@
+# Release caller inventory
+
+Inventory completed September 12, 2026, in preparation for installing the reusable release caller in each mod repository.
+
+## Caller configuration
+
+| Repository | Default branch | `product_name` | Primary release-notes readme | Bundle WildBlueCore |
+| --- | --- | --- | --- | --- |
+| Buffalo 2 | `main` | `Buffalo2` | `ReleaseFolder/GameData/WildBlueIndustries/Buffalo2/Readme.txt` | Yes |
+| Sandcastle | `main` | `Sandcastle` | `ReleaseFolder/GameData/WildBlueIndustries/Sandcastle/Readme.txt` | Yes |
+| SunkWorks | `main` | `SunkWorks` | `ReleaseFolder/GameData/WildBlueIndustries/SunkWorks/Readme.txt` | Yes |
+| WildBlueCore | `main` | `WildBlueCore` | `ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore/Readme.txt` | No |
+| Blueshift | `master` | `Blueshift` | `ReleaseFolder/GameData/WildBlueIndustries/Blueshift/Readme.txt` | No |
+
+All five primary readmes use the canonical `---CHANGES---` and `---END CHANGES---` markers. No marker overrides are required.
+
+## Packaged GameData contents
+
+The reusable workflow packages the complete `ReleaseFolder/GameData` directory, so these repository-specific payload differences require no workflow customization.
+
+| Repository | Top-level payload |
+| --- | --- |
+| Buffalo 2 | `NearFutureProps`, `WildBlueIndustries/001KerbalActuators`, `WildBlueIndustries/00WildBlueCore`, `WildBlueIndustries/Buffalo2`, ModuleManager |
+| Sandcastle | `NearFutureProps`, `WildBlueIndustries/00WildBlueCore`, `WildBlueIndustries/Sandcastle`, ModuleManager |
+| SunkWorks | `WildBlueIndustries/00WildBlueCore`, `WildBlueIndustries/SunkWorks` |
+| WildBlueCore | `WildBlueIndustries/00WildBlueCore` |
+| Blueshift | `FireflyAPI`, `WildBlueIndustries/Blueshift`, ModuleManager |
+
+For Buffalo 2, Sandcastle, and SunkWorks, the reusable workflow replaces only `ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore`. Every other bundled folder remains as committed at the mod's release tag.
+
+## Existing automation and releases
+
+| Repository | Existing tag workflow | Latest published release found during inventory | Existing asset naming |
+| --- | --- | --- | --- |
+| Buffalo 2 | None | `v1.9.0` | `Buffalo2.zip` |
+| Sandcastle | Full standalone `tag-release.yml` | `v1.5.0` | `Sandcastle_1_5_0_R1.zip` |
+| SunkWorks | None | `v1.2.0` | `SunkWorks.zip` |
+| WildBlueCore | None | `v1.6.0` | `WildBlueCore.zip` |
+| Blueshift | None | `v1.17.2` | `Blueshift.zip` |
+
+Step 4 should replace Sandcastle's standalone workflow with a small reusable-workflow caller and add equivalent callers to the other four repositories. New releases will consistently use `ProductName_major_minor_patch.zip`.
+
+## Pre-release observations
+
+- SunkWorks currently has local tag `v1.3.0` at `HEAD`, while GitHub's latest published release is `v1.2.0`. Adding a workflow does not retroactively run it for an existing tag; test the caller with a newly pushed version tag.
+- SunkWorks' `.version` file still points its update URL at the old `master` branch even though its default branch is `main`.
+- WildBlueCore's `.version` update URL points to `master/GameData/WildBlueIndustries/WildBlueCore/WildBlueCore.version`, while the inventoried default branch is `main` and the packaged file is under `ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore`. This does not affect the reusable workflow, but it should be reviewed before the next WildBlueCore release.
+- Blueshift intentionally remains on `master`; its current `.version` URL agrees with that branch.
