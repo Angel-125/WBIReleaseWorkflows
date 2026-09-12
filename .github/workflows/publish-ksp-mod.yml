@@ -1,0 +1,212 @@
+name: Publish KSP Mod Release
+
+on:
+  workflow_call:
+    inputs:
+      product_name:
+        description: Product name used in the release asset filename.
+        required: true
+        type: string
+      readme_path:
+        description: Repository-relative path to the readme containing release notes.
+        required: true
+        type: string
+      changes_start_marker:
+        description: Exact line that starts the release notes section.
+        required: false
+        default: '---CHANGES---'
+        type: string
+      changes_end_marker:
+        description: Exact line that ends the release notes section.
+        required: false
+        default: '---END CHANGES---'
+        type: string
+      bundle_wildbluecore:
+        description: Replace the bundled 00WildBlueCore folder with the latest published WildBlueCore release.
+        required: false
+        default: false
+        type: boolean
+      wildbluecore_repository:
+        description: GitHub repository that publishes WildBlueCore.
+        required: false
+        default: Angel-125/WildBlueCore
+        type: string
+      wildbluecore_source_path:
+        description: WildBlueCore folder within the checked-out dependency repository.
+        required: false
+        default: ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore
+        type: string
+      wildbluecore_destination_path:
+        description: Destination for WildBlueCore within the calling repository.
+        required: false
+        default: ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ksp-release-${{ github.repository }}-${{ github.ref }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+
+      - name: Validate tag and derive release names
+        id: release
+        shell: bash
+        env:
+          PRODUCT_NAME: ${{ inputs.product_name }}
+          TAG: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          set -euo pipefail
+
+          if [ "$REF_TYPE" != "tag" ]; then
+            echo "This workflow must be called from a tag push; received ref type: $REF_TYPE" >&2
+            exit 1
+          fi
+
+          if [[ ! "$TAG" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag must use the format [v]<major>.<minor>.<patch>; received: $TAG" >&2
+            exit 1
+          fi
+
+          if [[ ! "$PRODUCT_NAME" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Product name may contain only letters, numbers, dots, underscores, and hyphens." >&2
+            exit 1
+          fi
+
+          VERSION="${TAG#v}"
+          ASSET_VERSION="${VERSION//./_}"
+          ASSET_NAME="${PRODUCT_NAME}_${ASSET_VERSION}.zip"
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "asset_name=$ASSET_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Find latest WildBlueCore release
+        if: inputs.bundle_wildbluecore
+        id: wildbluecore
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WBC_REPOSITORY: ${{ inputs.wildbluecore_repository }}
+        run: |
+          set -euo pipefail
+
+          WBC_TAG="$(gh api "repos/${WBC_REPOSITORY}/releases/latest" --jq '.tag_name')"
+          if [ -z "$WBC_TAG" ]; then
+            echo "${WBC_REPOSITORY} does not have a latest published release." >&2
+            exit 1
+          fi
+
+          echo "Using WildBlueCore release: $WBC_TAG"
+          echo "tag=$WBC_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout latest WildBlueCore release
+        if: inputs.bundle_wildbluecore
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.wildbluecore_repository }}
+          ref: ${{ steps.wildbluecore.outputs.tag }}
+          path: _wildbluecore
+
+      - name: Replace bundled WildBlueCore
+        if: inputs.bundle_wildbluecore
+        shell: bash
+        env:
+          SOURCE_PATH: ${{ inputs.wildbluecore_source_path }}
+          DESTINATION_PATH: ${{ inputs.wildbluecore_destination_path }}
+        run: |
+          set -euo pipefail
+
+          case "$SOURCE_PATH" in
+            ""|/*|../*|*/../*|*/..) echo "WildBlueCore source path must be a safe repository-relative path." >&2; exit 1 ;;
+          esac
+          case "$DESTINATION_PATH" in
+            ReleaseFolder/GameData/*) ;;
+            *) echo "WildBlueCore destination must be inside ReleaseFolder/GameData." >&2; exit 1 ;;
+          esac
+          case "$DESTINATION_PATH" in
+            */../*|*/..) echo "WildBlueCore destination may not contain '..'." >&2; exit 1 ;;
+          esac
+
+          SOURCE="_wildbluecore/${SOURCE_PATH}"
+          if [ ! -d "$SOURCE" ]; then
+            echo "Missing WildBlueCore release folder: $SOURCE" >&2
+            exit 1
+          fi
+
+          mkdir -p "$(dirname "$DESTINATION_PATH")"
+          rm -rf -- "$DESTINATION_PATH"
+          cp -R -- "$SOURCE" "$DESTINATION_PATH"
+
+      - name: Extract release notes
+        shell: bash
+        env:
+          README_PATH: ${{ inputs.readme_path }}
+          START_MARKER: ${{ inputs.changes_start_marker }}
+          END_MARKER: ${{ inputs.changes_end_marker }}
+        run: |
+          set -euo pipefail
+
+          NOTES_FILE="${RUNNER_TEMP}/release-notes.md"
+          if [ ! -f "$README_PATH" ]; then
+            echo "Missing release-notes readme: $README_PATH" >&2
+            exit 1
+          fi
+
+          awk -v start="$START_MARKER" -v end="$END_MARKER" '
+            { sub(/\r$/, "") }
+            $0 == start { in_changes=1; found_start=1; next }
+            in_changes && $0 == end { found_end=1; exit }
+            in_changes { print }
+            END {
+              if (!found_start || !found_end) {
+                exit 2
+              }
+            }
+          ' "$README_PATH" > "$NOTES_FILE" || {
+            echo "Could not find both release-note markers in $README_PATH" >&2
+            exit 1
+          }
+
+          if ! grep -q '[^[:space:]]' "$NOTES_FILE"; then
+            echo "The release-notes section in $README_PATH is empty." >&2
+            exit 1
+          fi
+
+          echo "notes_file=$NOTES_FILE" >> "$GITHUB_ENV"
+
+      - name: Create release bundle
+        shell: bash
+        env:
+          ASSET_NAME: ${{ steps.release.outputs.asset_name }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -d "ReleaseFolder/GameData" ]; then
+            echo "Missing release bundle folder: ReleaseFolder/GameData" >&2
+            exit 1
+          fi
+
+          (
+            cd ReleaseFolder
+            zip -r -q "../${ASSET_NAME}" GameData
+          )
+
+      - name: Create GitHub release and upload bundle
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: ${{ steps.release.outputs.version }}
+          body_path: ${{ env.notes_file }}
+          files: ${{ steps.release.outputs.asset_name }}
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
