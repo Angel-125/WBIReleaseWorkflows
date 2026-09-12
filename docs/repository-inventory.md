@@ -42,7 +42,6 @@ Step 4 should replace Sandcastle's standalone workflow with a small reusable-wor
 
 ## Pre-release observations
 
-- SunkWorks currently has local tag `v1.3.0` at `HEAD`, while GitHub's latest published release is `v1.2.0`. Adding a workflow does not retroactively run it for an existing tag; test the caller with a newly pushed version tag.
-- SunkWorks' `.version` file still points its update URL at the old `master` branch even though its default branch is `main`.
-- WildBlueCore's `.version` update URL points to `master/GameData/WildBlueIndustries/WildBlueCore/WildBlueCore.version`, while the inventoried default branch is `main` and the packaged file is under `ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore`. This does not affect the reusable workflow, but it should be reviewed before the next WildBlueCore release.
+- SunkWorks `v1.3.0` is an in-development release and requires no action during caller migration.
+- SunkWorks and WildBlueCore now use their correct `main`-branch `.version` URLs.
 - Blueshift intentionally remains on `master`; its current `.version` URL agrees with that branch.
