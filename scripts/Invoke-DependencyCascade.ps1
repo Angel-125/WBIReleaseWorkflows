@@ -172,7 +172,7 @@ foreach ($dependent in $selected) {
         $botId = ($botIdOutput | Select-Object -First 1).Trim()
         $null = Invoke-Git $repoPath config user.name $botLogin
         $null = Invoke-Git $repoPath config user.email "$botId+$botLogin@users.noreply.github.com"
-        $null = Invoke-Git $repoPath add -- @($expectedPaths)
+        $null = Invoke-Git $repoPath add -- @expectedPaths
         $commitBody = @(
             "Bundle $([string]$dependent.dependency.product_name) $UpstreamTag",
             '',

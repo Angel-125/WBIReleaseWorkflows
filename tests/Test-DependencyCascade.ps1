@@ -122,5 +122,15 @@ Test-Case 'updates dependency manifest idempotently' {
     Assert-Equal 1 @(($second | ConvertFrom-Json).dependencies).Count
 }
 
+Test-Case 'splats git add paths as separate arguments' {
+    $cascadeScript = Get-Content (Join-Path $PSScriptRoot '..\scripts\Invoke-DependencyCascade.ps1') -Raw
+    if ($cascadeScript -notmatch [regex]::Escape('Invoke-Git $repoPath add -- @expectedPaths')) {
+        throw 'Dependency cascade does not splat expected git-add paths.'
+    }
+    if ($cascadeScript -match [regex]::Escape('Invoke-Git $repoPath add -- @($expectedPaths)')) {
+        throw 'Dependency cascade passes git-add paths as a nested array.'
+    }
+}
+
 if ($script:Failures -gt 0) { throw "$script:Failures dependency-cascade test(s) failed." }
 Write-Host 'All dependency-cascade tests passed.'
