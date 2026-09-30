@@ -140,5 +140,14 @@ Test-Case 'splats annotated-tag arguments to avoid parameter binding' {
     }
 }
 
+Test-Case 'configures bot identity before missing-tag recovery' {
+    $cascadeScript = Get-Content (Join-Path $PSScriptRoot '..\scripts\Invoke-DependencyCascade.ps1') -Raw
+    $identityIndex = $cascadeScript.IndexOf('config user.name $botLogin')
+    $recoveryIndex = $cascadeScript.IndexOf('$existingCommit =')
+    if ($identityIndex -lt 0 -or $recoveryIndex -lt 0 -or $identityIndex -gt $recoveryIndex) {
+        throw 'Bot identity must be configured before the missing-tag recovery path.'
+    }
+}
+
 if ($script:Failures -gt 0) { throw "$script:Failures dependency-cascade test(s) failed." }
 Write-Host 'All dependency-cascade tests passed.'

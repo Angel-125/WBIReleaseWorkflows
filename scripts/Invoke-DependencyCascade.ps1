@@ -88,6 +88,15 @@ foreach ($dependent in $selected) {
         if ($LASTEXITCODE -ne 0) { throw "Could not clone ${repository}: $($cloneOutput -join "`n")" }
         $null = Invoke-Git $repoPath fetch --tags --force
 
+        if (-not $DryRun) {
+            $botLogin = "$AppSlug[bot]"
+            $botIdOutput = & gh api "/users/$botLogin" --jq .id 2>&1
+            if ($LASTEXITCODE -ne 0) { throw "Could not resolve GitHub App bot identity '$botLogin': $($botIdOutput -join "`n")" }
+            $botId = ($botIdOutput | Select-Object -First 1).Trim()
+            $null = Invoke-Git $repoPath config user.name $botLogin
+            $null = Invoke-Git $repoPath config user.email "$botId+$botLogin@users.noreply.github.com"
+        }
+
         $marker = "WBI-Dependency-Release: $UpstreamRepository@$UpstreamTag"
         $existingCommit = (& git -C $repoPath log --all --fixed-strings --grep=$marker --format=%H -1 2>$null | Select-Object -First 1)
         if ($existingCommit) {
@@ -167,12 +176,6 @@ foreach ($dependent in $selected) {
             continue
         }
 
-        $botLogin = "$AppSlug[bot]"
-        $botIdOutput = & gh api "/users/$botLogin" --jq .id 2>&1
-        if ($LASTEXITCODE -ne 0) { throw "Could not resolve GitHub App bot identity '$botLogin': $($botIdOutput -join "`n")" }
-        $botId = ($botIdOutput | Select-Object -First 1).Trim()
-        $null = Invoke-Git $repoPath config user.name $botLogin
-        $null = Invoke-Git $repoPath config user.email "$botId+$botLogin@users.noreply.github.com"
         $null = Invoke-Git $repoPath add -- @expectedPaths
         $commitBody = @(
             "Bundle $([string]$dependent.dependency.product_name) $UpstreamTag",
