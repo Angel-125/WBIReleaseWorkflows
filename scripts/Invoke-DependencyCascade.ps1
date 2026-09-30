@@ -106,7 +106,8 @@ foreach ($dependent in $selected) {
                 Add-SummaryLine "| ``$repository`` | — | ``$newVersion`` | Would recover missing tag ``$targetTag`` at ``$existingCommit`` |"
                 continue
             }
-            $null = Invoke-Git $repoPath tag -a $targetTag $existingCommit -m "Release $newVersion"
+            $tagArguments = @('tag', '-a', $targetTag, $existingCommit, '-m', "Release $newVersion")
+            $null = Invoke-Git $repoPath @tagArguments
             $null = Invoke-Git $repoPath push origin "refs/tags/$targetTag"
             Add-SummaryLine "| ``$repository`` | — | ``$newVersion`` | Recovered and pushed missing tag ``$targetTag`` |"
             continue
@@ -182,7 +183,8 @@ foreach ($dependent in $selected) {
         $null = Invoke-Git $repoPath commit -m $commitBody
         $commitSha = (Invoke-Git $repoPath rev-parse HEAD | Select-Object -First 1).Trim()
         $null = Invoke-Git $repoPath push origin "HEAD:refs/heads/$([string]$dependent.default_branch)"
-        $null = Invoke-Git $repoPath tag -a $targetTag $commitSha -m "Release $newVersion"
+        $tagArguments = @('tag', '-a', $targetTag, $commitSha, '-m', "Release $newVersion")
+        $null = Invoke-Git $repoPath @tagArguments
         $null = Invoke-Git $repoPath push origin "refs/tags/$targetTag"
         Add-SummaryLine "| ``$repository`` | ``$oldVersion`` | ``$newVersion`` | Pushed commit ``$($commitSha.Substring(0, 7))`` and tag ``$targetTag`` |"
     }

@@ -132,5 +132,13 @@ Test-Case 'splats git add paths as separate arguments' {
     }
 }
 
+Test-Case 'splats annotated-tag arguments to avoid parameter binding' {
+    $cascadeScript = Get-Content (Join-Path $PSScriptRoot '..\scripts\Invoke-DependencyCascade.ps1') -Raw
+    Assert-Equal 2 ([regex]::Matches($cascadeScript, [regex]::Escape('Invoke-Git $repoPath @tagArguments')).Count)
+    if ($cascadeScript -match [regex]::Escape('Invoke-Git $repoPath tag -a')) {
+        throw 'Dependency cascade passes annotated-tag switches through PowerShell parameter binding.'
+    }
+}
+
 if ($script:Failures -gt 0) { throw "$script:Failures dependency-cascade test(s) failed." }
 Write-Host 'All dependency-cascade tests passed.'
