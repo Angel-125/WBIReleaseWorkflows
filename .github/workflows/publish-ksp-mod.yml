@@ -41,6 +41,16 @@ on:
         required: false
         default: ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore
         type: string
+      dependency_manifest_path:
+        description: Repository-relative exact dependency manifest created by a dependency cascade.
+        required: false
+        default: .wbi-release/dependencies.json
+        type: string
+      automation_ref:
+        description: WBIReleaseWorkflows ref containing dependency installation scripts.
+        required: false
+        default: v2
+        type: string
 
 permissions:
   contents: write
@@ -54,7 +64,14 @@ jobs:
 
     steps:
       - name: Checkout release tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Checkout release automation
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: Angel-125/WBIReleaseWorkflows
+          ref: ${{ inputs.automation_ref }}
+          path: _wbi_release_automation
 
       - name: Validate tag and derive release names
         id: release
@@ -89,8 +106,20 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "asset_name=$ASSET_NAME" >> "$GITHUB_OUTPUT"
 
+      - name: Install exact release dependencies
+        id: dependencies
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPENDENCY_MANIFEST_PATH: ${{ inputs.dependency_manifest_path }}
+          RELEASE_WORKSPACE: ${{ github.workspace }}
+        run: |
+          ./_wbi_release_automation/scripts/Install-ReleaseDependencies.ps1 `
+            -ManifestPath $env:DEPENDENCY_MANIFEST_PATH `
+            -Workspace $env:RELEASE_WORKSPACE
+
       - name: Find latest WildBlueCore release
-        if: inputs.bundle_wildbluecore
+        if: inputs.bundle_wildbluecore && steps.dependencies.outputs.wildbluecore_managed != 'true'
         id: wildbluecore
         shell: bash
         env:
@@ -109,15 +138,15 @@ jobs:
           echo "tag=$WBC_TAG" >> "$GITHUB_OUTPUT"
 
       - name: Checkout latest WildBlueCore release
-        if: inputs.bundle_wildbluecore
-        uses: actions/checkout@v4
+        if: inputs.bundle_wildbluecore && steps.dependencies.outputs.wildbluecore_managed != 'true'
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: ${{ inputs.wildbluecore_repository }}
           ref: ${{ steps.wildbluecore.outputs.tag }}
           path: _wildbluecore
 
       - name: Replace bundled WildBlueCore
-        if: inputs.bundle_wildbluecore
+        if: inputs.bundle_wildbluecore && steps.dependencies.outputs.wildbluecore_managed != 'true'
         shell: bash
         env:
           SOURCE_PATH: ${{ inputs.wildbluecore_source_path }}
@@ -201,7 +230,7 @@ jobs:
           )
 
       - name: Create GitHub release and upload bundle
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: ${{ steps.release.outputs.tag }}
           name: ${{ steps.release.outputs.version }}

@@ -1,6 +1,6 @@
 # Release caller inventory
 
-Inventory completed September 12, 2026, in preparation for installing the reusable release caller in each mod repository.
+Inventory originally completed September 12, 2026, and refreshed September 29, 2026 for dependency-cascade automation.
 
 ## Caller configuration
 
@@ -38,10 +38,16 @@ For Buffalo 2, Sandcastle, and SunkWorks, the reusable workflow replaces only `R
 | WildBlueCore | None | `v1.6.0` | `WildBlueCore.zip` |
 | Blueshift | None | `v1.17.2` | `Blueshift.zip` |
 
-Step 4 should replace Sandcastle's standalone workflow with a small reusable-workflow caller and add equivalent callers to the other four repositories. New releases will consistently use `ProductName_major_minor_patch.zip`.
+Reusable callers are now installed and have been proven by successful Blueshift and SunkWorks releases. Sandcastle `v1.5.1` also succeeded after its readme end marker was corrected. New releases consistently use `ProductName_major_minor_patch.zip`.
 
 ## Pre-release observations
 
 - SunkWorks `v1.3.0` is an in-development release and requires no action during caller migration.
 - SunkWorks and WildBlueCore now use their correct `main`-branch `.version` URLs.
 - Blueshift intentionally remains on `master`; its current `.version` URL agrees with that branch.
+
+## Dependency-cascade version audit
+
+The packaged `.version` files are authoritative for Buffalo2, Sandcastle, and SunkWorks. Their root-level `.version` files contain older versions and are not suitable automation targets. All three assemblies use a fixed `1.0.0.0` assembly/file version, so dependency-only patch releases do not require DLL rebuilding.
+
+PointsOfInterest currently contains design/reference material but no release layout, while Rockhound has no tracked release content in the local checkout. Their proposed dependency relationship remains documented but is not active in the registry.

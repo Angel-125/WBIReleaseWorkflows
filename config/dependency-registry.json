@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "upstreams": [
+    {
+      "repository": "Angel-125/WildBlueCore",
+      "cascade_mode": "manual",
+      "dependents": [
+        {
+          "repository": "Angel-125/Buffalo2",
+          "default_branch": "main",
+          "product_name": "Buffalo2",
+          "version_file": "ReleaseFolder/GameData/WildBlueIndustries/Buffalo2/Buffalo2.version",
+          "additional_version_files": [],
+          "release_notes_path": "ReleaseFolder/GameData/WildBlueIndustries/Buffalo2/Readme.txt",
+          "dependency_manifest_path": ".wbi-release/dependencies.json",
+          "tag_prefix": "v",
+          "automatic_cascade": true,
+          "dependency": {
+            "product_name": "WildBlueCore",
+            "asset_pattern": "WildBlueCore_{version_underscored}.zip",
+            "source_path": "GameData/WildBlueIndustries/00WildBlueCore",
+            "destination_path": "ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore"
+          }
+        },
+        {
+          "repository": "Angel-125/Sandcastle",
+          "default_branch": "main",
+          "product_name": "Sandcastle",
+          "version_file": "ReleaseFolder/GameData/WildBlueIndustries/Sandcastle/Sandcastle.version",
+          "additional_version_files": [],
+          "release_notes_path": "ReleaseFolder/GameData/WildBlueIndustries/Sandcastle/Readme.txt",
+          "dependency_manifest_path": ".wbi-release/dependencies.json",
+          "tag_prefix": "v",
+          "automatic_cascade": true,
+          "dependency": {
+            "product_name": "WildBlueCore",
+            "asset_pattern": "WildBlueCore_{version_underscored}.zip",
+            "source_path": "GameData/WildBlueIndustries/00WildBlueCore",
+            "destination_path": "ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore"
+          }
+        },
+        {
+          "repository": "Angel-125/SunkWorks",
+          "default_branch": "main",
+          "product_name": "SunkWorks",
+          "version_file": "ReleaseFolder/GameData/WildBlueIndustries/SunkWorks/SunkWorks.version",
+          "additional_version_files": [],
+          "release_notes_path": "ReleaseFolder/GameData/WildBlueIndustries/SunkWorks/Readme.txt",
+          "dependency_manifest_path": ".wbi-release/dependencies.json",
+          "tag_prefix": "v",
+          "automatic_cascade": true,
+          "dependency": {
+            "product_name": "WildBlueCore",
+            "asset_pattern": "WildBlueCore_{version_underscored}.zip",
+            "source_path": "GameData/WildBlueIndustries/00WildBlueCore",
+            "destination_path": "ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore"
+          }
+        }
+      ]
+    }
+  ]
+}

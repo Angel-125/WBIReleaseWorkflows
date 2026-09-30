@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "upstreams": [
+    {
+      "repository": "Angel-125/WildBlueCore",
+      "cascade_mode": "manual",
+      "dependents": [
+        {
+          "repository": "Angel-125/Sandcastle",
+          "default_branch": "main",
+          "product_name": "Sandcastle",
+          "version_file": "ReleaseFolder/GameData/WildBlueIndustries/Sandcastle/Sandcastle.version",
+          "additional_version_files": [],
+          "release_notes_path": "ReleaseFolder/GameData/WildBlueIndustries/Sandcastle/Readme.txt",
+          "dependency_manifest_path": ".wbi-release/dependencies.json",
+          "tag_prefix": "v",
+          "automatic_cascade": true,
+          "dependency": {
+            "product_name": "WildBlueCore",
+            "asset_pattern": "WildBlueCore.zip",
+            "source_path": "GameData/WildBlueIndustries/00WildBlueCore",
+            "destination_path": "ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore"
+          }
+        }
+      ]
+    }
+  ]
+}

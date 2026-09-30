@@ -1,0 +1,125 @@
+name: Reusable Dependency Cascade
+
+on:
+  workflow_call:
+    inputs:
+      upstream_repository:
+        description: Owner/repository of the published upstream dependency.
+        required: true
+        type: string
+      upstream_tag:
+        description: Exact published upstream version tag.
+        required: true
+        type: string
+      include_dependents:
+        description: Optional comma-separated dependent names; empty means all registered dependents.
+        required: false
+        default: ''
+        type: string
+      exclude_dependents:
+        description: Optional comma-separated dependent names to remove after inclusion.
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: Calculate and validate changes without commits, tags, or pushes.
+        required: false
+        default: true
+        type: boolean
+      automatic:
+        description: Enforce automatic-mode registry policy and automatic_cascade flags.
+        required: false
+        default: false
+        type: boolean
+      app_client_id:
+        description: Client ID of the installed GitHub App; required when dry_run is false.
+        required: false
+        default: ''
+        type: string
+      app_owner:
+        description: Account on which the GitHub App is installed.
+        required: false
+        default: Angel-125
+        type: string
+      app_slug:
+        description: GitHub App slug used for commit attribution.
+        required: false
+        default: wbi-release-bot
+        type: string
+      automation_ref:
+        description: WBIReleaseWorkflows ref containing the registry and scripts.
+        required: false
+        default: v2
+        type: string
+    secrets:
+      app_private_key:
+        description: Private key for the GitHub App; required when dry_run is false.
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  cascade:
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: wbi-dependency-cascade
+      cancel-in-progress: false
+    steps:
+      - name: Validate credential inputs
+        shell: pwsh
+        env:
+          APP_CLIENT_ID: ${{ inputs.app_client_id }}
+          APP_PRIVATE_KEY: ${{ secrets.app_private_key }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if ($env:DRY_RUN -ne 'true' -and ([string]::IsNullOrWhiteSpace($env:APP_CLIENT_ID) -or [string]::IsNullOrWhiteSpace($env:APP_PRIVATE_KEY))) {
+            throw 'A GitHub App Client ID and private key are required for a non-dry-run cascade.'
+          }
+
+      - name: Checkout dependency automation
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: Angel-125/WBIReleaseWorkflows
+          ref: ${{ inputs.automation_ref }}
+
+      - name: Create short-lived GitHub App token
+        if: ${{ !inputs.dry_run }}
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          client-id: ${{ inputs.app_client_id }}
+          private-key: ${{ secrets.app_private_key }}
+          owner: ${{ inputs.app_owner }}
+          permission-contents: write
+
+      - name: Configure Git authentication
+        if: ${{ !inputs.dry_run }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh auth setup-git
+
+      - name: Run dependency cascade
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ inputs.dry_run && github.token || steps.app-token.outputs.token }}
+          UPSTREAM_REPOSITORY: ${{ inputs.upstream_repository }}
+          UPSTREAM_TAG: ${{ inputs.upstream_tag }}
+          INCLUDE_DEPENDENTS: ${{ inputs.include_dependents }}
+          EXCLUDE_DEPENDENTS: ${{ inputs.exclude_dependents }}
+          APP_SLUG: ${{ inputs.dry_run && inputs.app_slug || steps.app-token.outputs.app-slug }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          AUTOMATIC: ${{ inputs.automatic }}
+        run: |
+          $arguments = @{
+            RegistryPath = './config/dependency-registry.json'
+            UpstreamRepository = $env:UPSTREAM_REPOSITORY
+            UpstreamTag = $env:UPSTREAM_TAG
+            IncludeDependents = $env:INCLUDE_DEPENDENTS
+            ExcludeDependents = $env:EXCLUDE_DEPENDENTS
+            AppSlug = $env:APP_SLUG
+          }
+          if ($env:DRY_RUN -eq 'true') { $arguments.DryRun = $true }
+          if ($env:AUTOMATIC -eq 'true') { $arguments.Automatic = $true }
+          ./scripts/Invoke-DependencyCascade.ps1 @arguments

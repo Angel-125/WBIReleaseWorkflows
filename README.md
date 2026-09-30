@@ -8,6 +8,7 @@ The workflow:
 - validates a three-part numeric version and normalizes the release title to `1.6.0`;
 - extracts release notes from a readme between configurable marker lines;
 - optionally replaces a mod's bundled `00WildBlueCore` with the latest published WildBlueCore release;
+- supports exact, version-pinned dependency assets created by a dependency cascade;
 - packages `ReleaseFolder/GameData`, keeping `GameData` at the root of the ZIP; and
 - creates a GitHub release with an asset such as `Sandcastle_1_6_0.zip` (no `_R1` suffix).
 
@@ -23,7 +24,7 @@ Buffalo 2, Sandcastle, and SunkWorks currently depend on WildBlueCore. Their cal
 
 The caller must grant `contents: write` so the reusable workflow can create the release and upload its ZIP. The central workflow repository must be public for callers in other public repositories to use it.
 
-The examples reference the stable major tag `@v1`. Before using them, publish the initial central workflow version and create the `v1` tag in this repository. During initial testing only, you can temporarily change `@v1` to `@main`; a version tag is safer because changes to `main` cannot unexpectedly alter established release callers.
+The current examples reference the dependency-aware major tag `@v2`. Existing `@v1` callers continue to work unchanged. Publish and test `v2` before installing the new examples; a version tag is safer than `@main` because changes to `main` cannot unexpectedly alter established release callers.
 
 See the [repository inventory](docs/repository-inventory.md) for the caller values, packaged dependencies, and migration notes for Buffalo 2, Sandcastle, SunkWorks, WildBlueCore, and Blueshift.
 
@@ -48,6 +49,8 @@ Both forms create release title `1.6.0`. For Sandcastle, the uploaded asset is `
 | `wildbluecore_repository` | No | `Angel-125/WildBlueCore` | Repository whose latest published release tag is used. |
 | `wildbluecore_source_path` | No | `ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore` | Dependency folder within WildBlueCore. |
 | `wildbluecore_destination_path` | No | `ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore` | Folder replaced in the calling repository. |
+| `dependency_manifest_path` | No | `.wbi-release/dependencies.json` | Exact dependency manifest created by a cascade. |
+| `automation_ref` | No | `v2` | Central ref containing dependency installation scripts. |
 
 Marker matching is exact after Windows carriage returns are removed. The canonical end marker is `---END CHANGES---`, which all caller examples use by default. A caller only needs `changes_end_marker` when supporting a readme that intentionally uses a different marker.
 
@@ -57,10 +60,16 @@ The caller's tag selects the exact source commit packaged by `actions/checkout`.
 
 The run stops without publishing if the tag is malformed, a required folder or marker is missing, the notes are empty, or the latest WildBlueCore release cannot be resolved. GitHub release creation occurs only after the ZIP has been built successfully.
 
-WildBlueCore updates do not automatically rebuild every existing Buffalo 2, Sandcastle, or SunkWorks release. The release policy depends on compatibility:
+Dependency cascades never rebuild an existing release. They create new patch versions of selected dependents. The initial WildBlueCore registry is deliberately in manual mode; automatic mode can be enabled after controlled testing.
 
 - For a compatible WildBlueCore bug fix or enhancement, release WildBlueCore by itself. CKAN can update the dependency independently, and each dependent mod's next normal release will bundle the newer WildBlueCore for manual installers.
 - If Buffalo 2, Sandcastle, or SunkWorks requires a new WildBlueCore API or minimum version, bump that mod's version and publish a new mod release. Its ZIP will then include the required WildBlueCore release, ensuring that manual installers receive a compatible pair.
 - For a breaking WildBlueCore change, rebuild, test, version, and release every affected dependent mod rather than replacing an asset under an existing mod version.
 
 Do not silently replace or add a rebuilt ZIP to an unchanged mod release. A new compatibility requirement is represented by a new mod version and tag.
+
+## Dependency cascades and GitHub App
+
+See the [dependency cascade design](docs/dependency-cascades.md) and the step-by-step [GitHub App setup guide](docs/github-app-setup.md). The App is only a short-lived authentication identity used by Actions; there is no service to host or local application to launch.
+
+The manual WildBlueCore caller supports `include_dependents`, `exclude_dependents`, and a default-on dry run. In automatic mode, the tag workflow waits for WildBlueCore publication to succeed before updating dependents.
