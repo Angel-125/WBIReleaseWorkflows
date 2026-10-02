@@ -11,8 +11,9 @@ Inventory originally completed September 12, 2026, and refreshed September 29, 2
 | SunkWorks | `main` | `SunkWorks` | `ReleaseFolder/GameData/WildBlueIndustries/SunkWorks/Readme.txt` | Yes |
 | WildBlueCore | `main` | `WildBlueCore` | `ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore/Readme.txt` | No |
 | Blueshift | `master` | `Blueshift` | `ReleaseFolder/GameData/WildBlueIndustries/Blueshift/Readme.txt` | No |
+| Snacks | `master` | `Snacks` | `ReleaseFolder/GameData/WildBlueIndustries/Snacks/Readme.txt` | No |
 
-All five primary readmes use the canonical `---CHANGES---` and `---END CHANGES---` markers. No marker overrides are required.
+All six primary readmes use the canonical `---CHANGES---` and `---END CHANGES---` markers. No marker overrides are required.
 
 ## Packaged GameData contents
 
@@ -25,6 +26,7 @@ The reusable workflow packages the complete `ReleaseFolder/GameData` directory, 
 | SunkWorks | `WildBlueIndustries/00WildBlueCore`, `WildBlueIndustries/SunkWorks` |
 | WildBlueCore | `WildBlueIndustries/00WildBlueCore` |
 | Blueshift | `FireflyAPI`, `WildBlueIndustries/Blueshift`, ModuleManager |
+| Snacks | `WildBlueIndustries/Snacks`, ModuleManager |
 
 For Buffalo 2, Sandcastle, and SunkWorks, the reusable workflow replaces only `ReleaseFolder/GameData/WildBlueIndustries/00WildBlueCore`. Every other bundled folder remains as committed at the mod's release tag.
 

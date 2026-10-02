@@ -18,15 +18,16 @@ Copy the appropriate file from [`examples`](examples) into the mod repository as
 
 - [Sandcastle](examples/sandcastle-tag-release.yml), including WildBlueCore;
 - [WildBlueCore](examples/wildbluecore-tag-release.yml), which publishes without bundling itself; and
-- [Blueshift](examples/blueshift-tag-release.yml), which does not depend on WildBlueCore.
+- [Blueshift](examples/blueshift-tag-release.yml), which does not depend on WildBlueCore; and
+- [Snacks](examples/snacks-tag-release.yml), which also publishes without WildBlueCore.
 
-Buffalo 2, Sandcastle, and SunkWorks currently depend on WildBlueCore. Their callers should set `bundle_wildbluecore: true`. Blueshift does not depend on WildBlueCore, and WildBlueCore must not attempt to bundle itself, so those callers use `false`.
+Buffalo 2, Sandcastle, and SunkWorks currently depend on WildBlueCore. Their callers should set `bundle_wildbluecore: true`. Blueshift and Snacks do not depend on WildBlueCore, and WildBlueCore must not attempt to bundle itself, so those callers use `false`.
 
 The caller must grant `contents: write` so the reusable workflow can create the release and upload its ZIP. The central workflow repository must be public for callers in other public repositories to use it.
 
 The current examples reference the dependency-aware major tag `@v2`. Existing `@v1` callers continue to work unchanged. Publish and test `v2` before installing the new examples; a version tag is safer than `@main` because changes to `main` cannot unexpectedly alter established release callers.
 
-See the [repository inventory](docs/repository-inventory.md) for the caller values, packaged dependencies, and migration notes for Buffalo 2, Sandcastle, SunkWorks, WildBlueCore, and Blueshift.
+See the [repository inventory](docs/repository-inventory.md) for the caller values, packaged dependencies, and migration notes for Buffalo 2, Sandcastle, SunkWorks, WildBlueCore, Blueshift, and Snacks.
 
 After installing a caller, create and push either form of a version tag:
 
